@@ -114,16 +114,16 @@ Single static binary. No CGO. No telemetry. No network calls (except proxied app
 
 See [`docs/DECISIONS.md`](docs/DECISIONS.md) for detailed architectural rationale.
 
-## Sibling projects
+## Part of the agent tool suite
 
-flume is part of a suite of local-first AI agent tools:
+A collection of local-first, single-binary dev tools built for AI coding agents. All share the same architecture: Go, no CGO, BadgerDB, daemon over Unix socket, MCP stdio, millisecond-latency queries. Free, local-only, no cloud.
 
-- **[scry](https://github.com/jeffdhooton/scry)** — Code intelligence daemon. Pre-computes symbols, references, and call graphs for millisecond-latency lookups.
-- **trawl** — Web scraping daemon.
-- **tome** — Schema awareness.
-- **lore** — Git intelligence.
-
-All share the same architecture: Go, single binary, no CGO, BadgerDB, daemon over Unix socket, MCP stdio, cobra CLI.
+| Tool | What it does | Status |
+|------|-------------|--------|
+| **[scry](https://github.com/jeffdhooton/scry)** | Code intelligence — symbols, refs, call graphs, impls, test coverage | Shipped |
+| **[flume](https://github.com/jeffdhooton/flume)** | Runtime visibility — HTTP requests, SQL queries, exceptions from dev servers | In progress |
+| **[tome](https://github.com/jeffdhooton/tome)** | Schema awareness — DB schemas, API shapes, ORM models, enums | In progress |
+| **[lore](https://github.com/jeffdhooton/lore)** | Git intelligence — blame, history, co-change patterns, hotspots | In progress |
 
 ## License
 
