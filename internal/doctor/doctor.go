@@ -126,6 +126,18 @@ func Run(opts Options) *Report {
 		return Pass, path, ""
 	})
 
+	r.check("claude", "skill installed", func() (Status, string, string) {
+		skillPath := filepath.Join(home, ".claude", "skills", "flume", "SKILL.md")
+		info, err := os.Stat(skillPath)
+		if os.IsNotExist(err) {
+			return Warn, "not installed", "flume setup"
+		}
+		if err != nil {
+			return Fail, "stat: " + err.Error(), ""
+		}
+		return Pass, fmt.Sprintf("%s (%d bytes)", skillPath, info.Size()), ""
+	})
+
 	r.check("claude", "MCP registration", func() (Status, string, string) {
 		claudeBin, err := exec.LookPath("claude")
 		if err != nil {

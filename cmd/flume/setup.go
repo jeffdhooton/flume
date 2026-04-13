@@ -39,6 +39,7 @@ func setupCmd() *cobra.Command {
 
 func printSetupResult(res *setup.Result) {
 	fmt.Fprintf(os.Stderr, "flume setup:\n")
+	fmt.Fprintf(os.Stderr, "  Skill: %s → %s\n", res.SkillAction, res.SkillPath)
 	fmt.Fprintf(os.Stderr, "  MCP server: %s\n", res.MCPAction)
 	fmt.Fprintf(os.Stderr, "  Binary: %s\n", res.MCPBinary)
 	if !res.ClaudeCLIFound {
