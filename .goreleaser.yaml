@@ -1,0 +1,92 @@
+# GoReleaser config for flume.
+#
+# Triggered by GitHub Actions on tag push (v*). Builds a single static
+# binary per platform, archives it as .tar.gz alongside the README and
+# docs, and uploads to the GitHub release.
+#
+# Hard constraints (inherited from docs/DECISIONS.md):
+#   - CGO_ENABLED=0. flume ships as a single static binary; no libc
+#     dependencies.
+#   - darwin + linux, amd64 + arm64. No Windows support — flume uses
+#     Unix sockets for the daemon RPC.
+#   - The Version string is injected via -ldflags. `flume version`
+#     reports whatever the tag was at build time. `go install` from
+#     source keeps the default "dev".
+#
+# To cut a release locally without GitHub Actions: install goreleaser,
+# then run `goreleaser release --clean` after tagging a commit.
+
+version: 2
+
+project_name: flume
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: flume
+    main: ./cmd/flume
+    binary: flume
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+    flags:
+      - -trimpath
+
+archives:
+  - id: flume
+    ids:
+      - flume
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format: tar.gz
+    files:
+      - README.md
+      - docs/DECISIONS.md
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  use: git
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+      - "^ci:"
+      - "^wip:"
+      - "typo"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  draft: true
+  prerelease: auto
+  header: |
+    ## flume {{ .Tag }}
+
+    Install:
+
+    ```bash
+    go install github.com/jeffdhooton/flume/cmd/flume@{{ .Tag }}
+    ```
+
+    Or grab a binary below and drop it on your PATH.
+
+    After install, run `flume setup` to register the Claude Code MCP
+    integration, then `flume doctor` to verify everything is wired up.
