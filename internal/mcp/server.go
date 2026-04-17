@@ -217,8 +217,15 @@ func (s *Server) handleToolsCall(ctx context.Context, req request) {
 }
 
 func (s *Server) callRequests(ctx context.Context, id json.RawMessage, rawArgs json.RawMessage) {
+	start := nowUTC()
+	entry := callLogEntry{Tool: "flume_requests", Repo: cwdOrEmpty()}
+
 	client, err := s.dial()
 	if err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = "dial failed"
+		logCall(entry)
 		s.writeToolError(id, "dial flume daemon: "+err.Error())
 		return
 	}
@@ -227,15 +234,30 @@ func (s *Server) callRequests(ctx context.Context, id json.RawMessage, rawArgs j
 	// Forward args directly — they match the store.ListFilter shape.
 	var raw json.RawMessage
 	if err := client.Call(ctx, "requests", rawArgs, &raw); err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = err.Error()
+		logCall(entry)
 		s.writeToolError(id, "flume requests: "+err.Error())
 		return
 	}
+	entry.Timestamp = start.Format(time.RFC3339)
+	entry.LatencyMs = time.Since(start).Milliseconds()
+	entry.Results = extractResultCount(raw)
+	logCall(entry)
 	s.writeToolResult(id, prettyJSON(raw), false)
 }
 
 func (s *Server) callRequest(ctx context.Context, id json.RawMessage, rawArgs json.RawMessage) {
+	start := nowUTC()
+	entry := callLogEntry{Tool: "flume_request", Repo: cwdOrEmpty()}
+
 	client, err := s.dial()
 	if err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = "dial failed"
+		logCall(entry)
 		s.writeToolError(id, "dial flume daemon: "+err.Error())
 		return
 	}
@@ -243,18 +265,33 @@ func (s *Server) callRequest(ctx context.Context, id json.RawMessage, rawArgs js
 
 	var raw json.RawMessage
 	if err := client.Call(ctx, "request", rawArgs, &raw); err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = err.Error()
+		logCall(entry)
 		s.writeToolError(id, "flume request: "+err.Error())
 		return
 	}
 
+	entry.Timestamp = start.Format(time.RFC3339)
+	entry.LatencyMs = time.Since(start).Milliseconds()
+	entry.Results = 1
+	logCall(entry)
 	// For the response, try to decode and format bodies as strings if they're
 	// text-based, and replace binary bodies with placeholders.
 	s.writeToolResult(id, formatRequestForAgent(raw), false)
 }
 
 func (s *Server) callStatus(ctx context.Context, id json.RawMessage) {
+	start := nowUTC()
+	entry := callLogEntry{Tool: "flume_status", Repo: cwdOrEmpty()}
+
 	client, err := s.dial()
 	if err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = "dial failed"
+		logCall(entry)
 		s.writeToolError(id, "dial flume daemon: "+err.Error())
 		return
 	}
@@ -262,10 +299,25 @@ func (s *Server) callStatus(ctx context.Context, id json.RawMessage) {
 
 	var raw json.RawMessage
 	if err := client.Call(ctx, "status", struct{}{}, &raw); err != nil {
+		entry.Timestamp = start.Format(time.RFC3339)
+		entry.LatencyMs = time.Since(start).Milliseconds()
+		entry.Error = err.Error()
+		logCall(entry)
 		s.writeToolError(id, "flume status: "+err.Error())
 		return
 	}
+	entry.Timestamp = start.Format(time.RFC3339)
+	entry.LatencyMs = time.Since(start).Milliseconds()
+	logCall(entry)
 	s.writeToolResult(id, prettyJSON(raw), false)
+}
+
+func cwdOrEmpty() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return cwd
 }
 
 // --- output helpers ---
